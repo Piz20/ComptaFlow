@@ -1,141 +1,191 @@
 using Aspose.Cells;
+using Aspose.Cells.Pivot;
 using System;
-using System.IO;
+using System.Text.RegularExpressions;
+using System.Drawing;
 
 namespace ComptaFlow.Services
 {
     public class TCDGeneratorSage
     {
-        public void GenererTCDPourChaqueFeuille(string cheminFichierExcel, string cheminSortie)
+        public void GenererTCDAvecFeuilPrecedente(string cheminFichierExcel, string cheminSortie)
         {
-            var workbook = new Workbook(cheminFichierExcel);
-            int feuilleInitialeCount = workbook.Worksheets.Count;
+            var workbookSource = new Workbook(cheminFichierExcel);
+            var workbookFinal = new Workbook();
+            workbookFinal.Worksheets.Clear();
 
-            // Création des TCD dans le même fichier
-            for (int i = 0; i < feuilleInitialeCount; i++)
+            // ➤ Définir le style par défaut pour tout le workbook (Calibri 11)
+            Style styleDefaut = workbookFinal.CreateStyle();
+            styleDefaut.Font.Name = "Calibri";
+            styleDefaut.Font.Size = 11;
+            workbookFinal.DefaultStyle = styleDefaut;
+
+            int compteurFeuil = 1;
+
+            foreach (Worksheet feuilleSource in workbookSource.Worksheets)
             {
-                var feuilleSource = workbook.Worksheets[i];
+                if (feuilleSource.Name.StartsWith("Feuil"))
+                    continue;
 
-                if (feuilleSource.Name.StartsWith("TCD")) continue;
+                NettoyerEtRenommerFeuille(feuilleSource, ref compteurFeuil);
 
-                var plageDonnees = DetecterPlageDonnees(feuilleSource);
-                if (string.IsNullOrWhiteSpace(plageDonnees)) continue;
+                Worksheet copieFeuille = workbookFinal.Worksheets.Add(feuilleSource.Name);
+                copieFeuille.Copy(feuilleSource);
 
-                var nomFeuille = feuilleSource.Name;
-                if (nomFeuille.Contains(" ") || nomFeuille.Contains("-"))
-                    nomFeuille = $"'{nomFeuille}'";
+                // ➤ Appliquer Calibri 11 à toute la feuille copiée
+                AppliquerStyleCalibriFeuille(copieFeuille);
 
-                var nomFeuilleTCD = $"TCD {i + 1}";
-                var feuilleTCD = workbook.Worksheets.Add(nomFeuilleTCD);
+                string nomFeuilTCD = $"Feuil{compteurFeuil++}";
+                Worksheet feuilleTCD = workbookFinal.Worksheets.Add(nomFeuilTCD);
 
-                string plage = $"{nomFeuille}!{plageDonnees}";
+                var plageDonnees = feuilleSource.Cells.MaxDisplayRange;
+                if (plageDonnees == null || plageDonnees.RowCount == 0 || plageDonnees.ColumnCount == 0)
+                    continue;
+
+                string plageAdresse = $"'{feuilleSource.Name}'!{plageDonnees.Address}";
 
                 try
                 {
-                    int ptIndex = feuilleTCD.PivotTables.Add(plage, "A3", $"Pivot_{i + 1}");
-                    var pivot = feuilleTCD.PivotTables[ptIndex];
+                    // ➤ Ajouter le TCD
+                    int indexPivot = feuilleTCD.PivotTables.Add(plageAdresse, "A1", "PivotTable1");
+                    PivotTable pivotTable = feuilleTCD.PivotTables[indexPivot];
 
-                    var range = feuilleSource.Cells.CreateRange(plageDonnees);
-                    int rowTitle = range.FirstRow;
-                    int colStart = range.FirstColumn;
-                    int colCount = range.ColumnCount;
+                    // ➤ Mode compact activé (appel de méthode)
+                    pivotTable.ShowInCompactForm();
 
-                    int colDate = -1;
-                    int colLibelle = -1;
-                    int colMontant = -1;
+                    // ➤ Ajout des champs "Étiquette de lignes" : date en 1er, libellé en 2e
+                    pivotTable.AddFieldToArea(PivotFieldType.Row, "Date");
+                    pivotTable.AddFieldToArea(PivotFieldType.Row, "Libellé écriture");
 
-                    for (int col = colStart; col < colStart + colCount; col++)
+                    // ➤ Trier automatiquement les étiquettes de lignes de A à Z
+                    foreach (PivotField rowField in pivotTable.RowFields)
                     {
-                        string header = feuilleSource.Cells[rowTitle, col].StringValue.Trim();
-
-                        if (header.Equals("Date", StringComparison.OrdinalIgnoreCase))
-                            colDate = col;
-
-                        if (header.Equals("Libellé écriture", StringComparison.OrdinalIgnoreCase))
-                            colLibelle = col;
-
-                        if (header.Equals("Montant signé (XAF)", StringComparison.OrdinalIgnoreCase))
-                            colMontant = col;
+                        rowField.IsAutoSort = true;
+                        rowField.IsAscendSort = true; // Tri croissant (A à Z)
                     }
 
-                    if (colDate == -1 || colLibelle == -1 || colMontant == -1)
+                    // ➤ Ajouter champ valeur : Somme de "Montant signé (XAF)"
+                    int dataFieldIndex = pivotTable.AddFieldToArea(PivotFieldType.Data, "Montant signé (XAF)");
+                    pivotTable.DataFields[dataFieldIndex].Function = ConsolidationFunction.Sum;
+
+                    // ➤ Renommer l'étiquette du champ en français
+                    pivotTable.DataFields[dataFieldIndex].DisplayName = "Somme de Montant signé (XAF)";
+
+                    // Afficher les sous-totaux
+                    // ➤ Afficher les sous-totaux uniquement pour le champ "Date"
+                    foreach (PivotField rowField in pivotTable.RowFields)
                     {
-                        Console.WriteLine($"❌ Feuille '{feuilleSource.Name}' : colonnes obligatoires manquantes.");
-                        continue;
+                        // C'est le champ "Date"
+                        if (rowField.Name == "Date")
+                        {
+                            rowField.SetSubtotals(PivotFieldSubtotalType.Sum, true); // Active les sous-totaux de type Somme
+                            rowField.ShowSubtotalAtTop = true; // Affiche les sous-totaux en haut (ou en bas, si vous préférez)
+                        }
+                        // C'est le champ "Libellé écriture"
+                        else if (rowField.Name == "Libellé écriture")
+                        {
+                            rowField.SetSubtotals(PivotFieldSubtotalType.None, true); // Désactive les sous-totaux
+                        }
                     }
 
-                    pivot.RowFields.Add(pivot.BaseFields[feuilleSource.Cells[rowTitle, colDate].StringValue]);
-                    pivot.RowFields.Add(pivot.BaseFields[feuilleSource.Cells[rowTitle, colLibelle].StringValue]);
-                    pivot.DataFields.Add(pivot.BaseFields[feuilleSource.Cells[rowTitle, colMontant].StringValue]);
-                    pivot.DataFields[0].Function = ConsolidationFunction.Sum;
+                    // ➤ Garder le grand total général
+                    pivotTable.ShowRowGrandTotals = true;
+                    pivotTable.ShowColumnGrandTotals = true;
 
-                    pivot.RefreshData();
-                    pivot.CalculateData();
+                    // ➤ Garder uniquement le total général
+                    pivotTable.ShowRowGrandTotals = true;
+                    pivotTable.ShowColumnGrandTotals = true;
+
+                    // ➤ Rafraîchir et calculer
+                    pivotTable.RefreshData();
+                    pivotTable.CalculateData();
+
+                    // ➤ Appliquer Calibri 11 à toute la feuille TCD
+                    AppliquerStyleCalibriFeuille(feuilleTCD);
+
+                    int startRow = pivotTable.TableRange2.StartRow;
+                    int endRow = pivotTable.TableRange2.EndRow;
+                    int maxCol = feuilleTCD.Cells.MaxColumn;
+
+                    int colDate = 0; // première colonne (Date)
+                    int colLibelle = 1; // deuxième colonne (Libellé écriture)
+                    int colMontant = 2; // la colonne de données (à ajuster si différent)
+
+                    // ➤ Style gras avec Calibri 11
+                    Style styleGras = feuilleTCD.Workbook.CreateStyle();
+                    styleGras.Font.IsBold = true;
+                    styleGras.Font.Name = "Calibri";
+                    styleGras.Font.Size = 11;
+                    StyleFlag flagGras = new StyleFlag() { FontBold = true, FontName = true, FontSize = true };
+
+                    for (int row = startRow; row <= endRow; row++)
+                    {
+                        Cell cellDate = feuilleTCD.Cells[row, colDate];
+                        Cell cellLibelle = feuilleTCD.Cells[row, colLibelle];
+                        Cell cellMontant = feuilleTCD.Cells[row, colMontant];
+
+                        // ➤ Si colonne Date vide ou fusionnée + colonne Libellé vide ou fusionnée + colonne Montant non vide => probablement une ligne de total
+                        bool isDateVide = cellDate.IsMerged || string.IsNullOrWhiteSpace(cellDate.StringValue);
+                        bool isLibelleVide = cellLibelle.IsMerged || string.IsNullOrWhiteSpace(cellLibelle.StringValue);
+                        bool hasMontant = cellMontant.Type == CellValueType.IsNumeric && cellMontant.DoubleValue != 0;
+
+                        if (isDateVide && isLibelleVide && hasMontant)
+                        {
+                            // ➤ Appliquer le style gras à toute la ligne
+                            for (int col = 0; col <= maxCol; col++)
+                            {
+                                Cell cell = feuilleTCD.Cells[row, col];
+                                cell.SetStyle(styleGras, flagGras);
+                            }
+                        }
+                    }
+
+                    // ➤ Déplacement de la feuille TCD avant la copie
+                    int idxFeuilleCopie = workbookFinal.Worksheets.IndexOf(copieFeuille);
+                    int idxFeuilleTCD = workbookFinal.Worksheets.IndexOf(feuilleTCD);
+                    workbookFinal.Worksheets[idxFeuilleTCD].MoveTo(idxFeuilleCopie);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ Erreur création TCD feuille '{feuilleSource.Name}' : {ex.Message}");
-                    continue;
+                    Console.WriteLine($"Erreur TCD feuille '{feuilleSource.Name}' : {ex.Message}");
                 }
             }
 
-            // Sauvegarde intermédiaire dans cheminSortie
-            workbook.Save(cheminSortie);
+            workbookFinal.Save(cheminSortie);
+            Console.WriteLine($"Fichier généré : {cheminSortie}");
+        }
 
-            // --- Copier toutes les feuilles sauf la dernière dans un nouveau fichier ---
+        private void AppliquerStyleCalibriFeuille(Worksheet feuille)
+        {
+            // ➤ Style Calibri 11 pour toute la feuille
+            Style styleCalibriFeuille = feuille.Workbook.CreateStyle();
+            styleCalibriFeuille.Font.Name = "Calibri";
+            styleCalibriFeuille.Font.Size = 11;
 
-            var workbookFinal = new Workbook();
-            while (workbookFinal.Worksheets.Count > 0)
-                workbookFinal.Worksheets.RemoveAt(0);
+            StyleFlag flag = new StyleFlag();
+            flag.FontName = true;
+            flag.FontSize = true;
 
-            int totalFeuilles = workbook.Worksheets.Count;
-
-            for (int i = 0; i < totalFeuilles - 1; i++)  // Toutes sauf la dernière
+            // ➤ Appliquer à toutes les cellules utilisées
+            if (feuille.Cells.MaxDisplayRange != null)
             {
-                var feuille = workbook.Worksheets[i];
-                int nouvelleFeuilleIndex = workbookFinal.Worksheets.Add();
-                var nouvelleFeuille = workbookFinal.Worksheets[nouvelleFeuilleIndex];
-                nouvelleFeuille.Copy(feuille);
-                nouvelleFeuille.Name = NettoyerNomFeuille(feuille.Name);
+                feuille.Cells.ApplyStyle(styleCalibriFeuille, flag);
             }
-
-            string dossierSortie = Path.GetDirectoryName(cheminSortie) ?? "";
-            string nouveauFichier = Path.Combine(dossierSortie, "TCD COMPLET SAGE.xlsx");
-
-            workbookFinal.Save(nouveauFichier);
-
-            Console.WriteLine($"📄 Nouveau fichier sans la dernière feuille sauvegardé : {nouveauFichier}");
         }
 
-        private string NettoyerNomFeuille(string nom)
+        private void NettoyerEtRenommerFeuille(Worksheet feuille, ref int compteur)
         {
-            if (string.IsNullOrEmpty(nom))
-                return "Feuille";
+            string nomOriginal = feuille.Name;
+            string nomNettoye = Regex.Replace(nomOriginal, @"[\\\/\*\[\]\?:']", "_");
 
-            if (nom.Length > 31)
-                nom = nom.Substring(0, 31);
+            if (nomNettoye.Length > 31)
+                nomNettoye = nomNettoye.Substring(0, 31);
 
-            char[] interdits = { '\\', '/', '?', '*', '[', ']', ':' };
-            foreach (var c in interdits)
-                nom = nom.Replace(c, '_');
-
-            nom = nom.Trim('\'');
-
-            if (string.IsNullOrWhiteSpace(nom))
-                nom = "Feuille";
-
-            return nom;
-        }
-
-        private string? DetecterPlageDonnees(Worksheet feuilleSource)
-        {
-            var plage = feuilleSource.Cells.MaxDisplayRange;
-            if (plage == null || plage.RowCount < 2 || plage.ColumnCount < 2)
-                return null;
-
-            var debut = CellsHelper.CellIndexToName(plage.FirstRow, plage.FirstColumn);
-            var fin = CellsHelper.CellIndexToName(plage.FirstRow + plage.RowCount - 1, plage.FirstColumn + plage.ColumnCount - 1);
-            return $"{debut}:{fin}";
+            if (nomNettoye != nomOriginal)
+            {
+                Console.WriteLine($"Renommage feuille '{nomOriginal}' en '{nomNettoye}' pour éviter erreurs");
+                feuille.Name = nomNettoye;
+            }
         }
     }
 }

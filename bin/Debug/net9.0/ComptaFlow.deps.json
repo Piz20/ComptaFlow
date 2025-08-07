@@ -8,23 +8,23 @@
     ".NETCoreApp,Version=v9.0": {
       "ComptaFlow/1.0.0": {
         "dependencies": {
-          "Aspose.Cells": "23.12.0",
+          "Aspose.Cells": "25.7.0",
           "ClosedXML": "0.105.0"
         },
         "runtime": {
           "ComptaFlow.dll": {}
         }
       },
-      "Aspose.Cells/23.12.0": {
+      "Aspose.Cells/25.7.0": {
         "dependencies": {
-          "SkiaSharp": "2.88.6",
-          "System.Security.Cryptography.Pkcs": "6.0.3",
+          "SkiaSharp": "3.116.1",
+          "System.Security.Cryptography.Pkcs": "9.0.0",
           "System.Text.Encoding.CodePages": "4.7.0"
         },
         "runtime": {
-          "lib/net7.0/Aspose.Cells.dll": {
-            "assemblyVersion": "23.12.0.0",
-            "fileVersion": "23.12.0.0"
+          "lib/net9.0/Aspose.Cells.dll": {
+            "assemblyVersion": "25.7.0.0",
+            "fileVersion": "25.7.0.0"
           }
         }
       },
@@ -98,19 +98,19 @@
           }
         }
       },
-      "SkiaSharp/2.88.6": {
+      "SkiaSharp/3.116.1": {
         "dependencies": {
-          "SkiaSharp.NativeAssets.Win32": "2.88.6",
-          "SkiaSharp.NativeAssets.macOS": "2.88.6"
+          "SkiaSharp.NativeAssets.Win32": "3.116.1",
+          "SkiaSharp.NativeAssets.macOS": "3.116.1"
         },
         "runtime": {
-          "lib/net6.0/SkiaSharp.dll": {
-            "assemblyVersion": "2.88.0.0",
-            "fileVersion": "2.88.6.0"
+          "lib/net8.0/SkiaSharp.dll": {
+            "assemblyVersion": "3.116.0.0",
+            "fileVersion": "3.116.1.0"
           }
         }
       },
-      "SkiaSharp.NativeAssets.macOS/2.88.6": {
+      "SkiaSharp.NativeAssets.macOS/3.116.1": {
         "runtimeTargets": {
           "runtimes/osx/native/libSkiaSharp.dylib": {
             "rid": "osx",
@@ -119,7 +119,7 @@
           }
         }
       },
-      "SkiaSharp.NativeAssets.Win32/2.88.6": {
+      "SkiaSharp.NativeAssets.Win32/3.116.1": {
         "runtimeTargets": {
           "runtimes/win-arm64/native/libSkiaSharp.dll": {
             "rid": "win-arm64",
@@ -138,7 +138,6 @@
           }
         }
       },
-      "System.Formats.Asn1/6.0.0": {},
       "System.IO.Packaging/8.0.1": {
         "runtime": {
           "lib/net8.0/System.IO.Packaging.dll": {
@@ -147,11 +146,7 @@
           }
         }
       },
-      "System.Security.Cryptography.Pkcs/6.0.3": {
-        "dependencies": {
-          "System.Formats.Asn1": "6.0.0"
-        }
-      },
+      "System.Security.Cryptography.Pkcs/9.0.0": {},
       "System.Text.Encoding.CodePages/4.7.0": {
         "dependencies": {
           "Microsoft.NETCore.Platforms": "3.1.0"
@@ -165,12 +160,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Aspose.Cells/23.12.0": {
+    "Aspose.Cells/25.7.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-qBP3QTBUC9IaPPZ7aq0VzMg7bG/5nm71W20yXzOQCNkkMwTgbjydwMSGh06BzL5tg8PKEuDxQOlDcaElKYWzkg==",
-      "path": "aspose.cells/23.12.0",
-      "hashPath": "aspose.cells.23.12.0.nupkg.sha512"
+      "sha512": "sha512-mGyMYEhKHfjpyxFmYL9FpoSe9fJY+Fj4CK3BudD4XBPSMiWIuGlqh9+FRXZm76Gzp4bMPX+g+2Hn8Ms6TwzwQg==",
+      "path": "aspose.cells/25.7.0",
+      "hashPath": "aspose.cells.25.7.0.nupkg.sha512"
     },
     "ClosedXML/0.105.0": {
       "type": "package",
@@ -228,33 +223,26 @@
       "path": "sixlabors.fonts/1.0.0",
       "hashPath": "sixlabors.fonts.1.0.0.nupkg.sha512"
     },
-    "SkiaSharp/2.88.6": {
+    "SkiaSharp/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-wdfeBAQrEQCbJIRgAiargzP1Uy+0grZiG4CSgBnhAgcJTsPzlifIaO73JRdwIlT3TyBoeU9jEqzwFUhl4hTYnQ==",
-      "path": "skiasharp/2.88.6",
-      "hashPath": "skiasharp.2.88.6.nupkg.sha512"
+      "sha512": "sha512-DNDwbRjP+aMo27dV2h/uHCVTcWubWWxHnPLiePNyl24f4Pv43mQ8AQQeseOrKR+J3AOCEs6t0sUjo0aa3j3RWQ==",
+      "path": "skiasharp/3.116.1",
+      "hashPath": "skiasharp.3.116.1.nupkg.sha512"
     },
-    "SkiaSharp.NativeAssets.macOS/2.88.6": {
+    "SkiaSharp.NativeAssets.macOS/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-Sko9LFxRXSjb3OGh5/RxrVRXxYo48tr5NKuuSy6jB85GrYt8WRqVY1iLOLwtjPiVAt4cp+pyD4i30azanS64dw==",
-      "path": "skiasharp.nativeassets.macos/2.88.6",
-      "hashPath": "skiasharp.nativeassets.macos.2.88.6.nupkg.sha512"
+      "sha512": "sha512-3KPvpKysDmEMt0NnAZPX5U6KFk0LmG/72/IjAIJemIksIZ0Tjs9pGpr3L+zboVCv1MLVoJLKl3nJDXUG6Jda6A==",
+      "path": "skiasharp.nativeassets.macos/3.116.1",
+      "hashPath": "skiasharp.nativeassets.macos.3.116.1.nupkg.sha512"
     },
-    "SkiaSharp.NativeAssets.Win32/2.88.6": {
+    "SkiaSharp.NativeAssets.Win32/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-7TzFO0u/g2MpQsTty4fyCDdMcfcWI+aLswwfnYXr3gtNS6VLKdMXPMeKpJa3pJSLnUBN6wD0JjuCe8OoLBQ6cQ==",
-      "path": "skiasharp.nativeassets.win32/2.88.6",
-      "hashPath": "skiasharp.nativeassets.win32.2.88.6.nupkg.sha512"
-    },
-    "System.Formats.Asn1/6.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-T6fD00dQ3NTbPDy31m4eQUwKW84s03z0N2C8HpOklyeaDgaJPa/TexP4/SkORMSOwc7WhKifnA6Ya33AkzmafA==",
-      "path": "system.formats.asn1/6.0.0",
-      "hashPath": "system.formats.asn1.6.0.0.nupkg.sha512"
+      "sha512": "sha512-dRQ75MCI8oz6zAs2Y1w6pq6ARs4MhdNG+gf3doOxOxdnueDXffQLGQIxON54GDoxc0WjKOoHMKBR4DhaduwwQw==",
+      "path": "skiasharp.nativeassets.win32/3.116.1",
+      "hashPath": "skiasharp.nativeassets.win32.3.116.1.nupkg.sha512"
     },
     "System.IO.Packaging/8.0.1": {
       "type": "package",
@@ -263,12 +251,12 @@
       "path": "system.io.packaging/8.0.1",
       "hashPath": "system.io.packaging.8.0.1.nupkg.sha512"
     },
-    "System.Security.Cryptography.Pkcs/6.0.3": {
+    "System.Security.Cryptography.Pkcs/9.0.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-18UT1BdZ4TYFBHk/wuq7JzCdE3X75z81X+C2rXqIlmEnC21Pm60spGV/dKQSzbyomstqYE33EuN5hfnC86VFxA==",
-      "path": "system.security.cryptography.pkcs/6.0.3",
-      "hashPath": "system.security.cryptography.pkcs.6.0.3.nupkg.sha512"
+      "sha512": "sha512-8tluJF8w9si+2yoHeL8rgVJS6lKvWomTDC8px65Z8MCzzdME5eaPtEQf4OfVGrAxB5fW93ncucy1+221O9EQaw==",
+      "path": "system.security.cryptography.pkcs/9.0.0",
+      "hashPath": "system.security.cryptography.pkcs.9.0.0.nupkg.sha512"
     },
     "System.Text.Encoding.CodePages/4.7.0": {
       "type": "package",

@@ -107,3 +107,4 @@ C:\Users\p.eminiant\Desktop\PROJETS\ComptaFlow\bin\Debug\net9.0\runtimes\osx\nat
 C:\Users\p.eminiant\Desktop\PROJETS\ComptaFlow\bin\Debug\net9.0\runtimes\win-arm64\native\libSkiaSharp.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ComptaFlow\bin\Debug\net9.0\runtimes\win-x64\native\libSkiaSharp.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ComptaFlow\bin\Debug\net9.0\runtimes\win-x86\native\libSkiaSharp.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ComptaFlow\obj\Debug\net9.0\ComptaFlow.sourcelink.json

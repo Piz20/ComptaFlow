@@ -12,15 +12,19 @@ namespace ComptaFlow.Controllers
     {
         private readonly TCDGeneratorSage _tcdService;
 
-        // Injection possible, sinon création manuelle
-        public SageTCDController()
+        // Injection possible via DI, sinon création manuelle par défaut
+        public SageTCDController(TCDGeneratorSage? tcdService = null)
         {
-            _tcdService = new TCDGeneratorSage();
+            _tcdService = tcdService ?? new TCDGeneratorSage();
         }
 
         [HttpPost("generer-tcd")]
         public IActionResult GenererTCDDepuisFichier([FromBody] TCDRequest request)
         {
+            // Validation des paramètres
+            if (request == null)
+                return BadRequest("❌ Le corps de la requête est vide.");
+
             if (string.IsNullOrWhiteSpace(request.FilePath) || !System.IO.File.Exists(request.FilePath))
                 return BadRequest("❌ Le fichier source est introuvable.");
 
@@ -31,7 +35,7 @@ namespace ComptaFlow.Controllers
             {
                 var outputPath = Path.Combine(request.OutputDirectory, "FICHIER SAGE AVEC TCD.xlsx");
 
-                _tcdService.GenererTCDPourChaqueFeuille(request.FilePath, outputPath);
+                _tcdService.GenererTCDAvecFeuilPrecedente(request.FilePath, outputPath);
 
                 return Ok(new
                 {
@@ -41,7 +45,12 @@ namespace ComptaFlow.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"❌ Erreur : {ex.Message}");
+                // Log l’erreur ici si possible
+                return StatusCode(500, new
+                {
+                    message = "❌ Une erreur est survenue lors de la génération du fichier.",
+                    details = ex.Message
+                });
             }
         }
     }
