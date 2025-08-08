@@ -54,4 +54,54 @@ namespace ComptaFlow.Controllers
             }
         }
     }
+
+
+[ApiController]
+    [Route("api/[controller]")]
+    public class IntegraTCDController : ControllerBase
+    {
+        private readonly TCDGeneratorIntegra _tcdService;
+
+        // Injection possible via DI, sinon création manuelle par défaut
+        public IntegraTCDController(TCDGeneratorIntegra? tcdService = null)
+        {
+            _tcdService = tcdService ?? new TCDGeneratorIntegra();
+        }
+
+        [HttpPost("generer-tcd")]
+        public IActionResult GenererTCDDepuisFichier([FromBody] TCDRequest request)
+        {
+            if (request == null)
+                return BadRequest("❌ Le corps de la requête est vide.");
+
+            if (string.IsNullOrWhiteSpace(request.FilePath) || !System.IO.File.Exists(request.FilePath))
+                return BadRequest("❌ Le fichier source est introuvable.");
+
+            if (string.IsNullOrWhiteSpace(request.OutputDirectory) || !Directory.Exists(request.OutputDirectory))
+                return BadRequest("❌ Le répertoire de sortie est invalide.");
+
+            try
+            {
+                var outputPath = Path.Combine(request.OutputDirectory, "FICHIER INTEGRA AVEC TCD.xlsx");
+
+                _tcdService.GenererTCD(request.FilePath, outputPath);
+
+                return Ok(new
+                {
+                    message = "✅ Fichier généré avec succès.",
+                    cheminFichierGenere = outputPath
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "❌ Une erreur est survenue lors de la génération du fichier.",
+                    details = ex.Message
+                });
+            }
+        }
+    }
+
+
 }

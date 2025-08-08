@@ -1,93 +1,94 @@
-using ClosedXML.Excel;
+using Aspose.Cells;
+using System;
+using System.Collections.Generic;
 
 public static class ComptaUtils
 {
-    public static void AfficherStructureGenerale(XLWorkbook workbook, string sheetName)
-{
-    var worksheet = workbook.Worksheet(sheetName);
-    if (worksheet == null)
+    public static void AfficherStructureGenerale(Workbook workbook, string sheetName)
     {
-        Console.WriteLine($"❌ Feuille '{sheetName}' introuvable.");
-        return;
-    }
-
-    int maxRowsToAnalyze = 10;
-    int lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 0;
-
-    int titreRowIndex = -1;
-    int sousTitreRowIndex = -1;
-
-    // Étape 1 : trouver la ligne la plus "textuelle" (probable ligne de titres)
-    for (int rowIndex = 1; rowIndex <= maxRowsToAnalyze; rowIndex++)
-    {
-        var row = worksheet.Row(rowIndex);
-        int textCellCount = 0;
-        int numericOrDateCount = 0;
-
-        for (int col = 1; col <= lastColumn; col++)
+        var worksheet = workbook.Worksheets[sheetName];
+        if (worksheet == null)
         {
-            var val = row.Cell(col).Value;
-            string cellString = row.Cell(col).GetString();
-            if (!string.IsNullOrWhiteSpace(cellString))
-                textCellCount++;
-            else if (double.TryParse(val.ToString(), out _) || DateTime.TryParse(val.ToString(), out _))
-                numericOrDateCount++;
+            Console.WriteLine($"❌ Feuille '{sheetName}' introuvable.");
+            return;
         }
 
-        if (textCellCount > 2 && numericOrDateCount == 0) // heuristique simple
+        int maxRowsToAnalyze = 10;
+        var plage = worksheet.Cells.MaxDisplayRange;
+        int lastColumn = plage?.ColumnCount ?? 0;
+
+        int titreRowIndex = -1;
+        int sousTitreRowIndex = -1;
+
+        // ➤ Étape 1 : détecter la ligne de titres
+        for (int rowIndex = 0; rowIndex < maxRowsToAnalyze; rowIndex++)
         {
-            titreRowIndex = rowIndex;
-            // Vérifie si la ligne suivante pourrait contenir des sous-titres
-            var nextRow = worksheet.Row(rowIndex + 1);
-            int subTitleCount = 0;
-            for (int col = 1; col <= lastColumn; col++)
+            int textCellCount = 0;
+            int numericOrDateCount = 0;
+
+            for (int col = 0; col < lastColumn; col++)
             {
-                var val = nextRow.Cell(col).GetString().Trim();
-                if (!string.IsNullOrEmpty(val))
-                    subTitleCount++;
+                var cell = worksheet.Cells[rowIndex, col];
+                string cellString = cell.StringValue.Trim();
+                if (!string.IsNullOrWhiteSpace(cellString))
+                    textCellCount++;
+                else if (cell.Type == CellValueType.IsNumeric || cell.Type == CellValueType.IsDateTime)
+                    numericOrDateCount++;
             }
 
-            if (subTitleCount > 0)
-                sousTitreRowIndex = rowIndex + 1;
+            if (textCellCount > 2 && numericOrDateCount == 0)
+            {
+                titreRowIndex = rowIndex;
 
-            break;
+                var nextRow = rowIndex + 1;
+                if (nextRow < worksheet.Cells.MaxDataRow)
+                {
+                    int subTitleCount = 0;
+                    for (int col = 0; col < lastColumn; col++)
+                    {
+                        string val = worksheet.Cells[nextRow, col].StringValue.Trim();
+                        if (!string.IsNullOrEmpty(val))
+                            subTitleCount++;
+                    }
+
+                    if (subTitleCount > 0)
+                        sousTitreRowIndex = nextRow;
+                }
+
+                break;
+            }
         }
-    }
 
-    if (titreRowIndex == -1)
-    {
-        Console.WriteLine("❗ Impossible de détecter une ligne de titres.");
-        return;
-    }
-
-    var mainRow = worksheet.Row(titreRowIndex);
-    var subRow = sousTitreRowIndex != -1 ? worksheet.Row(sousTitreRowIndex) : null;
-
-    string? currentMainTitle = null;
-    var groupedColumns = new Dictionary<string, List<string>>();
-                                          
-    for (int col = 1 ; col <= lastColumn; col++)
-    {
-        string main = mainRow.Cell(col).GetString().Trim();
-        string sub = subRow?.Cell(col).GetString().Trim() ?? "";
-
-        if (!string.IsNullOrEmpty(main))
+        if (titreRowIndex == -1)
         {
-            currentMainTitle = main;
-            if (!groupedColumns.ContainsKey(currentMainTitle))
-                groupedColumns[currentMainTitle] = new List<string>();
+            Console.WriteLine("❗ Impossible de détecter une ligne de titres.");
+            return;
         }
 
-        if (!string.IsNullOrEmpty(sub))
+        var groupedColumns = new Dictionary<string, List<string>>();
+        string? currentMainTitle = null;
+
+        for (int col = 0; col < lastColumn; col++)
         {
-            if (string.IsNullOrEmpty(currentMainTitle))
-                currentMainTitle = "(Sans titre)";
-            if (!groupedColumns.ContainsKey(currentMainTitle))
-                groupedColumns[currentMainTitle] = new List<string>();
-            groupedColumns[currentMainTitle].Add(sub);
-        }
-        
-        else if (!string.IsNullOrEmpty(main))
+            string main = worksheet.Cells[titreRowIndex, col].StringValue.Trim();
+            string sub = sousTitreRowIndex != -1 ? worksheet.Cells[sousTitreRowIndex, col].StringValue.Trim() : "";
+
+            if (!string.IsNullOrEmpty(main))
+            {
+                currentMainTitle = main;
+                if (!groupedColumns.ContainsKey(currentMainTitle))
+                    groupedColumns[currentMainTitle] = new List<string>();
+            }
+
+            if (!string.IsNullOrEmpty(sub))
+            {
+                if (string.IsNullOrEmpty(currentMainTitle))
+                    currentMainTitle = "(Sans titre)";
+                if (!groupedColumns.ContainsKey(currentMainTitle))
+                    groupedColumns[currentMainTitle] = new List<string>();
+                groupedColumns[currentMainTitle].Add(sub);
+            }
+            else if (!string.IsNullOrEmpty(main))
             {
                 if (string.IsNullOrEmpty(currentMainTitle))
                     currentMainTitle = "(Sans titre)";
@@ -96,17 +97,16 @@ public static class ComptaUtils
                 if (!groupedColumns[currentMainTitle].Contains("(Aucune sous-colonne)"))
                     groupedColumns[currentMainTitle].Add("(Aucune sous-colonne)");
             }
-    }
+        }
 
-    Console.WriteLine($"\n📊 Structure détectée automatiquement (feuille '{sheetName}') :\n");
-    foreach (var entry in groupedColumns)
-    {
-        Console.WriteLine($"📁 {entry.Key}");
-        foreach (var sub in entry.Value)
+        Console.WriteLine($"\n📊 Structure détectée automatiquement (feuille '{sheetName}') :\n");
+        foreach (var entry in groupedColumns)
         {
-            Console.WriteLine($"   └── 📄 {sub}");
+            Console.WriteLine($"📁 {entry.Key}");
+            foreach (var sub in entry.Value)
+            {
+                Console.WriteLine($"   └── 📄 {sub}");
+            }
         }
     }
-}
-
 }

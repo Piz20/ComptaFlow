@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ComptaFlow")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9c6e377664ed9be579ecbf8099f97ef890acbf2e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+811d785343d959f4ff713262731b6667a0099a6a")]
 [assembly: System.Reflection.AssemblyProductAttribute("ComptaFlow")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ComptaFlow")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

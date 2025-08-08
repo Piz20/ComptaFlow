@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using ClosedXML.Excel;
-using System.Collections.Generic;
-using System.IO;
+using Aspose.Cells;
 using System.ComponentModel.DataAnnotations;
 
 namespace ComptaFlow.Controllers
@@ -21,7 +19,7 @@ namespace ComptaFlow.Controllers
 
             try
             {
-                using var workbook = new XLWorkbook(filePath);
+                var workbook = new Workbook(filePath);
 
                 foreach (var feuille in workbook.Worksheets)
                 {
