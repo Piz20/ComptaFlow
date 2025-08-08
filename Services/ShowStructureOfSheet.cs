@@ -65,8 +65,8 @@ public static class ComptaUtils
 
     string? currentMainTitle = null;
     var groupedColumns = new Dictionary<string, List<string>>();
-
-    for (int col = 1; col <= lastColumn; col++)
+                                          
+    for (int col = 1 ; col <= lastColumn; col++)
     {
         string main = mainRow.Cell(col).GetString().Trim();
         string sub = subRow?.Cell(col).GetString().Trim() ?? "";
@@ -86,15 +86,16 @@ public static class ComptaUtils
                 groupedColumns[currentMainTitle] = new List<string>();
             groupedColumns[currentMainTitle].Add(sub);
         }
+        
         else if (!string.IsNullOrEmpty(main))
-        {
-            if (string.IsNullOrEmpty(currentMainTitle))
-                currentMainTitle = "(Sans titre)";
-            if (!groupedColumns.ContainsKey(currentMainTitle))
-                groupedColumns[currentMainTitle] = new List<string>();
-            if (!groupedColumns[currentMainTitle].Contains("(Aucune sous-colonne)"))
-                groupedColumns[currentMainTitle].Add("(Aucune sous-colonne)");
-        }
+            {
+                if (string.IsNullOrEmpty(currentMainTitle))
+                    currentMainTitle = "(Sans titre)";
+                if (!groupedColumns.ContainsKey(currentMainTitle))
+                    groupedColumns[currentMainTitle] = new List<string>();
+                if (!groupedColumns[currentMainTitle].Contains("(Aucune sous-colonne)"))
+                    groupedColumns[currentMainTitle].Add("(Aucune sous-colonne)");
+            }
     }
 
     Console.WriteLine($"\n📊 Structure détectée automatiquement (feuille '{sheetName}') :\n");

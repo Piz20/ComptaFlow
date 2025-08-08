@@ -1,8 +1,6 @@
 using Aspose.Cells;
 using Aspose.Cells.Pivot;
-using System;
 using System.Text.RegularExpressions;
-using System.Drawing;
 
 namespace ComptaFlow.Services
 {
@@ -14,11 +12,8 @@ namespace ComptaFlow.Services
             var workbookFinal = new Workbook();
             workbookFinal.Worksheets.Clear();
 
-            // ➤ Définir le style par défaut pour tout le workbook (Calibri 11)
-            Style styleDefaut = workbookFinal.CreateStyle();
-            styleDefaut.Font.Name = "Calibri";
-            styleDefaut.Font.Size = 11;
-            workbookFinal.DefaultStyle = styleDefaut;
+            // ➤ Définir le style par défaut
+            SetDefaultStyle(workbookFinal);
 
             int compteurFeuil = 1;
 
@@ -32,9 +27,6 @@ namespace ComptaFlow.Services
                 Worksheet copieFeuille = workbookFinal.Worksheets.Add(feuilleSource.Name);
                 copieFeuille.Copy(feuilleSource);
 
-                // ➤ Appliquer Calibri 11 à toute la feuille copiée
-                AppliquerStyleCalibriFeuille(copieFeuille);
-
                 string nomFeuilTCD = $"Feuil{compteurFeuil++}";
                 Worksheet feuilleTCD = workbookFinal.Worksheets.Add(nomFeuilTCD);
 
@@ -46,99 +38,9 @@ namespace ComptaFlow.Services
 
                 try
                 {
-                    // ➤ Ajouter le TCD
-                    int indexPivot = feuilleTCD.PivotTables.Add(plageAdresse, "A1", "PivotTable1");
-                    PivotTable pivotTable = feuilleTCD.PivotTables[indexPivot];
+                    // ➤ Génération et configuration du TCD (nouvelle méthode)
+                    GenererEtConfigurerTCD(feuilleTCD, plageAdresse);
 
-                    // ➤ Mode compact activé (appel de méthode)
-                    pivotTable.ShowInCompactForm();
-
-                    // ➤ Ajout des champs "Étiquette de lignes" : date en 1er, libellé en 2e
-                    pivotTable.AddFieldToArea(PivotFieldType.Row, "Date");
-                    pivotTable.AddFieldToArea(PivotFieldType.Row, "Libellé écriture");
-
-                    // ➤ Trier automatiquement les étiquettes de lignes de A à Z
-                    foreach (PivotField rowField in pivotTable.RowFields)
-                    {
-                        rowField.IsAutoSort = true;
-                        rowField.IsAscendSort = true; // Tri croissant (A à Z)
-                    }
-
-                    // ➤ Ajouter champ valeur : Somme de "Montant signé (XAF)"
-                    int dataFieldIndex = pivotTable.AddFieldToArea(PivotFieldType.Data, "Montant signé (XAF)");
-                    pivotTable.DataFields[dataFieldIndex].Function = ConsolidationFunction.Sum;
-
-                    // ➤ Renommer l'étiquette du champ en français
-                    pivotTable.DataFields[dataFieldIndex].DisplayName = "Somme de Montant signé (XAF)";
-
-                    // Afficher les sous-totaux
-                    // ➤ Afficher les sous-totaux uniquement pour le champ "Date"
-                    foreach (PivotField rowField in pivotTable.RowFields)
-                    {
-                        // C'est le champ "Date"
-                        if (rowField.Name == "Date")
-                        {
-                            rowField.SetSubtotals(PivotFieldSubtotalType.Sum, true); // Active les sous-totaux de type Somme
-                            rowField.ShowSubtotalAtTop = true; // Affiche les sous-totaux en haut (ou en bas, si vous préférez)
-                        }
-                        // C'est le champ "Libellé écriture"
-                        else if (rowField.Name == "Libellé écriture")
-                        {
-                            rowField.SetSubtotals(PivotFieldSubtotalType.None, true); // Désactive les sous-totaux
-                        }
-                    }
-
-                    // ➤ Garder le grand total général
-                    pivotTable.ShowRowGrandTotals = true;
-                    pivotTable.ShowColumnGrandTotals = true;
-
-                    // ➤ Garder uniquement le total général
-                    pivotTable.ShowRowGrandTotals = true;
-                    pivotTable.ShowColumnGrandTotals = true;
-
-                    // ➤ Rafraîchir et calculer
-                    pivotTable.RefreshData();
-                    pivotTable.CalculateData();
-
-                    // ➤ Appliquer Calibri 11 à toute la feuille TCD
-                    AppliquerStyleCalibriFeuille(feuilleTCD);
-
-                    int startRow = pivotTable.TableRange2.StartRow;
-                    int endRow = pivotTable.TableRange2.EndRow;
-                    int maxCol = feuilleTCD.Cells.MaxColumn;
-
-                    int colDate = 0; // première colonne (Date)
-                    int colLibelle = 1; // deuxième colonne (Libellé écriture)
-                    int colMontant = 2; // la colonne de données (à ajuster si différent)
-
-                    // ➤ Style gras avec Calibri 11
-                    Style styleGras = feuilleTCD.Workbook.CreateStyle();
-                    styleGras.Font.IsBold = true;
-                    styleGras.Font.Name = "Calibri";
-                    styleGras.Font.Size = 11;
-                    StyleFlag flagGras = new StyleFlag() { FontBold = true, FontName = true, FontSize = true };
-
-                    for (int row = startRow; row <= endRow; row++)
-                    {
-                        Cell cellDate = feuilleTCD.Cells[row, colDate];
-                        Cell cellLibelle = feuilleTCD.Cells[row, colLibelle];
-                        Cell cellMontant = feuilleTCD.Cells[row, colMontant];
-
-                        // ➤ Si colonne Date vide ou fusionnée + colonne Libellé vide ou fusionnée + colonne Montant non vide => probablement une ligne de total
-                        bool isDateVide = cellDate.IsMerged || string.IsNullOrWhiteSpace(cellDate.StringValue);
-                        bool isLibelleVide = cellLibelle.IsMerged || string.IsNullOrWhiteSpace(cellLibelle.StringValue);
-                        bool hasMontant = cellMontant.Type == CellValueType.IsNumeric && cellMontant.DoubleValue != 0;
-
-                        if (isDateVide && isLibelleVide && hasMontant)
-                        {
-                            // ➤ Appliquer le style gras à toute la ligne
-                            for (int col = 0; col <= maxCol; col++)
-                            {
-                                Cell cell = feuilleTCD.Cells[row, col];
-                                cell.SetStyle(styleGras, flagGras);
-                            }
-                        }
-                    }
 
                     // ➤ Déplacement de la feuille TCD avant la copie
                     int idxFeuilleCopie = workbookFinal.Worksheets.IndexOf(copieFeuille);
@@ -155,23 +57,82 @@ namespace ComptaFlow.Services
             Console.WriteLine($"Fichier généré : {cheminSortie}");
         }
 
-        private void AppliquerStyleCalibriFeuille(Worksheet feuille)
+        private void SetDefaultStyle(Workbook workbook)
         {
-            // ➤ Style Calibri 11 pour toute la feuille
-            Style styleCalibriFeuille = feuille.Workbook.CreateStyle();
-            styleCalibriFeuille.Font.Name = "Calibri";
-            styleCalibriFeuille.Font.Size = 11;
-
-            StyleFlag flag = new StyleFlag();
-            flag.FontName = true;
-            flag.FontSize = true;
-
-            // ➤ Appliquer à toutes les cellules utilisées
-            if (feuille.Cells.MaxDisplayRange != null)
-            {
-                feuille.Cells.ApplyStyle(styleCalibriFeuille, flag);
-            }
+            Style styleDefaut = workbook.CreateStyle();
+            styleDefaut.Font.Name = "Calibri";
+            styleDefaut.Font.Size = 11;
+            workbook.DefaultStyle = styleDefaut;
         }
+
+        // Nouvelle méthode pour générer et configurer le TCD
+        private void GenererEtConfigurerTCD(Worksheet feuilleTCD, string plageAdresse)
+        {
+            int indexPivot = feuilleTCD.PivotTables.Add(plageAdresse, "A1", "PivotTable1");
+            PivotTable pivotTable = feuilleTCD.PivotTables[indexPivot];
+
+            pivotTable.ShowInCompactForm();
+
+            // ➤ Ajout du filtre sur Journal
+            pivotTable.AddFieldToArea(PivotFieldType.Page, "Journal");
+
+            // ➤ Ajout des champs en lignes
+            pivotTable.AddFieldToArea(PivotFieldType.Row, "Date");
+            pivotTable.AddFieldToArea(PivotFieldType.Row, "Libellé écriture");
+
+            foreach (PivotField rowField in pivotTable.RowFields)
+            {
+                rowField.IsAutoSort = true;
+                rowField.IsAscendSort = true;
+            }
+
+            // ➤ Ajout du champ en valeur
+            int dataFieldIndex = pivotTable.AddFieldToArea(PivotFieldType.Data, "Montant signé (XAF)");
+            pivotTable.DataFields[dataFieldIndex].Function = ConsolidationFunction.Sum;
+            pivotTable.DataFields[dataFieldIndex].DisplayName = "Somme de Montant signé (XAF)";
+
+            // ➤ Application des sous-totaux
+            foreach (PivotField rowField in pivotTable.RowFields)
+            {
+                if (rowField.Name == "Date")
+                {
+                    rowField.SetSubtotals(PivotFieldSubtotalType.Sum, true);
+                    rowField.ShowSubtotalAtTop = true;
+                }
+                else if (rowField.Name == "Libellé écriture")
+                {
+                    rowField.SetSubtotals(PivotFieldSubtotalType.None, true);
+                }
+            }
+
+            pivotTable.ShowRowGrandTotals = true;
+            pivotTable.ShowColumnGrandTotals = true;
+
+            pivotTable.RefreshData();
+            pivotTable.CalculateData();
+
+            // ➤ Fixer le filtre Journal à "TRANSFERT"
+            PivotField? filtreJournal = null;
+            foreach (PivotField field in pivotTable.PageFields)
+            {
+                if (field.Name == "Journal")
+                {
+                    filtreJournal = field;
+                    break;
+                }
+            }
+
+            if (filtreJournal != null)
+            {
+                foreach (PivotItem item in filtreJournal.PivotItems)
+                {
+                    item.IsHidden = ((string)item.Value) != "TRANSFERT";
+                }
+            }
+
+        }
+
+
 
         private void NettoyerEtRenommerFeuille(Worksheet feuille, ref int compteur)
         {
@@ -189,3 +150,9 @@ namespace ComptaFlow.Services
         }
     }
 }
+
+
+//// RESTE A FAIRE :
+/// * SUPPRIMER LA DERNIERE FEUILLE LORS DE LA CREATION DES TCDS
+/// * BIEN FILTRER POUR OBTENIR EXACTEMENT LES DONNEES SOUHAITEES
+/// * AJOUTER DES STYLES SIMILAIRES A CEUX DES TCDS CRÉÉS MANUELLEMENT
