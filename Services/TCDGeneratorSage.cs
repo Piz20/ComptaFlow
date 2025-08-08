@@ -1,6 +1,7 @@
 using Aspose.Cells;
 using Aspose.Cells.Pivot;
 using System.Text.RegularExpressions;
+using ClosedXML.Excel;
 
 namespace ComptaFlow.Services
 {
@@ -41,6 +42,7 @@ namespace ComptaFlow.Services
                     // ➤ Génération et configuration du TCD (nouvelle méthode)
                     GenererEtConfigurerTCD(feuilleTCD, plageAdresse);
 
+                    // ➤ Application du style gras aux totaux (nouvelle méthode)
 
                     // ➤ Déplacement de la feuille TCD avant la copie
                     int idxFeuilleCopie = workbookFinal.Worksheets.IndexOf(copieFeuille);
@@ -54,6 +56,8 @@ namespace ComptaFlow.Services
             }
 
             workbookFinal.Save(cheminSortie);
+            SupprimerDerniereFeuilleAvecClosedXml(cheminSortie);
+
             Console.WriteLine($"Fichier généré : {cheminSortie}");
         }
 
@@ -133,6 +137,23 @@ namespace ComptaFlow.Services
         }
 
 
+        public void SupprimerDerniereFeuilleAvecClosedXml(string cheminFichier)
+        {
+            using var workbook = new XLWorkbook(cheminFichier);
+
+            // ➤ Vérifie qu’il y a au moins une feuille
+            if (workbook.Worksheets.Count > 0)
+            {
+                var derniereFeuille = workbook.Worksheets.Last();
+                workbook.Worksheets.Delete(derniereFeuille.Name);
+                workbook.Save(); // ➤ Écrase le fichier existant
+                Console.WriteLine($"Dernière feuille '{derniereFeuille.Name}' supprimée.");
+            }
+            else
+            {
+                Console.WriteLine("Aucune feuille à supprimer.");
+            }
+        }
 
         private void NettoyerEtRenommerFeuille(Worksheet feuille, ref int compteur)
         {
@@ -152,7 +173,3 @@ namespace ComptaFlow.Services
 }
 
 
-//// RESTE A FAIRE :
-/// * SUPPRIMER LA DERNIERE FEUILLE LORS DE LA CREATION DES TCDS
-/// * BIEN FILTRER POUR OBTENIR EXACTEMENT LES DONNEES SOUHAITEES
-/// * AJOUTER DES STYLES SIMILAIRES A CEUX DES TCDS CRÉÉS MANUELLEMENT
