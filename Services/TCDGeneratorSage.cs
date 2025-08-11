@@ -1,7 +1,9 @@
 using Aspose.Cells;
 using Aspose.Cells.Pivot;
+using System;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using System.Linq;
 
 namespace ComptaFlow.Services
 {
@@ -20,7 +22,7 @@ namespace ComptaFlow.Services
 
             foreach (Worksheet feuilleSource in workbookSource.Worksheets)
             {
-                if (feuilleSource.Name.StartsWith("Feuil"))
+                if (feuilleSource.Name.StartsWith("Feuil", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 NettoyerEtRenommerFeuille(feuilleSource, ref compteurFeuil);
@@ -39,10 +41,8 @@ namespace ComptaFlow.Services
 
                 try
                 {
-                    // ➤ Génération et configuration du TCD (nouvelle méthode)
+                    // ➤ Génération et configuration du TCD
                     GenererEtConfigurerTCD(feuilleTCD, plageAdresse);
-
-                    // ➤ Application du style gras aux totaux (nouvelle méthode)
 
                     // ➤ Déplacement de la feuille TCD avant la copie
                     int idxFeuilleCopie = workbookFinal.Worksheets.IndexOf(copieFeuille);
@@ -55,7 +55,10 @@ namespace ComptaFlow.Services
                 }
             }
 
+            // Sauvegarde le fichier généré
             workbookFinal.Save(cheminSortie);
+
+            // Supprime la dernière feuille avec ClosedXML
             SupprimerDerniereFeuilleAvecClosedXml(cheminSortie);
 
             Console.WriteLine($"Fichier généré : {cheminSortie}");
@@ -69,7 +72,6 @@ namespace ComptaFlow.Services
             workbook.DefaultStyle = styleDefaut;
         }
 
-        // Nouvelle méthode pour générer et configurer le TCD
         private void GenererEtConfigurerTCD(Worksheet feuilleTCD, string plageAdresse)
         {
             int indexPivot = feuilleTCD.PivotTables.Add(plageAdresse, "A1", "PivotTable1");
@@ -77,10 +79,10 @@ namespace ComptaFlow.Services
 
             pivotTable.ShowInCompactForm();
 
-            // ➤ Ajout du filtre sur Journal
+            // Ajout du filtre sur Journal
             pivotTable.AddFieldToArea(PivotFieldType.Page, "Journal");
 
-            // ➤ Ajout des champs en lignes
+            // Ajout des champs en lignes
             pivotTable.AddFieldToArea(PivotFieldType.Row, "Date");
             pivotTable.AddFieldToArea(PivotFieldType.Row, "Libellé écriture");
 
@@ -90,12 +92,12 @@ namespace ComptaFlow.Services
                 rowField.IsAscendSort = true;
             }
 
-            // ➤ Ajout du champ en valeur
+            // Ajout du champ en valeur
             int dataFieldIndex = pivotTable.AddFieldToArea(PivotFieldType.Data, "Montant signé (XAF)");
             pivotTable.DataFields[dataFieldIndex].Function = ConsolidationFunction.Sum;
             pivotTable.DataFields[dataFieldIndex].DisplayName = "Somme de Montant signé (XAF)";
 
-            // ➤ Application des sous-totaux
+            // Application des sous-totaux
             foreach (PivotField rowField in pivotTable.RowFields)
             {
                 if (rowField.Name == "Date")
@@ -115,7 +117,7 @@ namespace ComptaFlow.Services
             pivotTable.RefreshData();
             pivotTable.CalculateData();
 
-            // ➤ Fixer le filtre Journal à "TRANSFERT"
+            // Fixer le filtre Journal à "TRANSFERT"
             PivotField? filtreJournal = null;
             foreach (PivotField field in pivotTable.PageFields)
             {
@@ -133,20 +135,18 @@ namespace ComptaFlow.Services
                     item.IsHidden = ((string)item.Value) != "TRANSFERT";
                 }
             }
-
         }
-
 
         public void SupprimerDerniereFeuilleAvecClosedXml(string cheminFichier)
         {
             using var workbook = new XLWorkbook(cheminFichier);
 
-            // ➤ Vérifie qu’il y a au moins une feuille
+            // Vérifie qu’il y a au moins une feuille
             if (workbook.Worksheets.Count > 0)
             {
                 var derniereFeuille = workbook.Worksheets.Last();
                 workbook.Worksheets.Delete(derniereFeuille.Name);
-                workbook.Save(); // ➤ Écrase le fichier existant
+                workbook.Save(); // Écrase le fichier existant
                 Console.WriteLine($"Dernière feuille '{derniereFeuille.Name}' supprimée.");
             }
             else
@@ -171,5 +171,3 @@ namespace ComptaFlow.Services
         }
     }
 }
-
-
